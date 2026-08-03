@@ -2,7 +2,7 @@
 ===============================================================================
 PROJECT: LoteCalc DR (B2B PropTech SaaS)
 FILE: app.py
-VERSION: 1.5 (Secure API Key Injection)
+VERSION: 1.6 (Broker Branding Sidebar)
 DATE: August 03, 2026
 AUTHOR: P1 (Lead PropTech Developer)
 ===============================================================================
@@ -18,7 +18,7 @@ from data_validator import validate_lot_inputs
 from real_estate_math import FeasibilityEngine
 from pdf_generator import generate_tear_sheet
 
-st.set_page_config(page_title="LoteCalc DR", page_icon="🏢", layout="centered", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="LoteCalc DR", page_icon="🏢", layout="centered", initial_sidebar_state="expanded")
 
 st.markdown("""
     <style>
@@ -45,19 +45,24 @@ def toggle_lang():
 
 t = TEXT[st.session_state['lang']]
 
-col1, col2 = st.columns([4, 1])
-with col1:
-    st.title(t["app_title"])
-    st.caption(t["subtitle"])
-with col2:
-    st.button("EN / ES", on_click=toggle_lang)
+# --- BROKER BRANDING SIDEBAR ---
+with st.sidebar:
+    st.header("👤 Broker Profile")
+    st.caption("Personalize your PDF reports.")
+    broker_name = st.text_input("Your Name / Agency", placeholder="e.g. John Doe Realty")
+    broker_phone = st.text_input("Contact Number", placeholder="e.g. +1 809-555-0199")
+    broker_logo = st.file_uploader("Upload Logo (PNG/JPG)", type=["png", "jpg", "jpeg"])
+    st.divider()
+    st.button("🌐 EN / ES", on_click=toggle_lang)
 
+# --- UI HEADER ---
+st.title(t["app_title"])
+st.caption(t["subtitle"])
 st.divider()
 
 # --- STEP 1: GEOLOCATION ---
 st.subheader(t["step_1"])
 
-# Fetch the secure API key from Streamlit Secrets
 try:
     MAPS_API_KEY = st.secrets["MAPS_API_KEY"]
 except KeyError:
@@ -65,11 +70,10 @@ except KeyError:
     MAPS_API_KEY = ""
 
 google_map_component = components.declare_component("google_map", path=os.path.join(BASE_DIR, "map_component"))
-
-# Pass the API key securely to the HTML component
 gps_data = google_map_component(api_key=MAPS_API_KEY, key="gmap")
 
 sector_id = None
+lat, lon = None, None
 if gps_data:
     lat, lon = gps_data.get('lat'), gps_data.get('lon')
     sector_id = get_sector_from_gps(lat, lon)
@@ -159,12 +163,19 @@ if st.button(t["btn_calculate"]):
                 
                 st.divider()
                 
+                # Package all inputs, including broker branding and map data
                 inputs_dict = {
                     "sector": sector_id,
                     "width": w,
                     "depth": d,
                     "price": price if price else 0,
-                    "permuta": permuta
+                    "permuta": permuta,
+                    "lat": lat,
+                    "lon": lon,
+                    "api_key": MAPS_API_KEY,
+                    "broker_name": broker_name,
+                    "broker_phone": broker_phone,
+                    "broker_logo": broker_logo.read() if broker_logo else None
                 }
                 
                 pdf_bytes = generate_tear_sheet(res, inputs_dict)

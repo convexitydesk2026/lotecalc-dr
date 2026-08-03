@@ -2,7 +2,7 @@
 ===============================================================================
 PROJECT: LoteCalc DR (B2B PropTech SaaS)
 FILE: pdf_generator.py
-VERSION: 1.2 (Dynamic Cloud Paths)
+VERSION: 1.3 (Static Map & Broker Branding)
 DATE: August 03, 2026
 AUTHOR: P1 (Lead PropTech Developer)
 ===============================================================================
@@ -10,9 +10,9 @@ AUTHOR: P1 (Lead PropTech Developer)
 import os
 import json
 import tempfile
+import urllib.request
 from fpdf import FPDF
 
-# CRITICAL FIX: Dynamic Path for Cloud Deployment
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ASSUMPTIONS_PATH = os.path.join(BASE_DIR, 'market_assumptions.json')
 
@@ -20,11 +20,47 @@ def generate_tear_sheet(results, inputs):
     pdf = FPDF()
     pdf.add_page()
     
-    # --- HEADER ---
+    # --- BROKER BRANDING HEADER ---
+    if inputs.get('broker_logo'):
+        # Save logo bytes to a temporary file so FPDF can read it
+        logo_path = os.path.join(tempfile.gettempdir(), "broker_logo_temp.png")
+        with open(logo_path, "wb") as f:
+            f.write(inputs['broker_logo'])
+        try:
+            pdf.image(logo_path, x=10, y=8, h=15)
+        except Exception:
+            pass # Failsafe if the user uploads an unsupported image format
+            
     pdf.set_font('Arial', 'B', 16)
     pdf.set_text_color(0, 122, 255) # LoteCalc Blue
-    pdf.cell(0, 10, 'LoteCalc DR - Financial Tear-Sheet', 0, 1, 'C')
-    pdf.ln(5)
+    
+    # Align title to the right if a logo exists on the left, otherwise center it
+    align = 'R' if inputs.get('broker_logo') else 'C'
+    pdf.cell(0, 8, 'LoteCalc DR - Financial Tear-Sheet', 0, 1, align)
+    
+    # Broker Contact Info
+    pdf.set_font('Arial', '', 10)
+    pdf.set_text_color(100, 100, 100) # Gray
+    broker_text = f"Prepared by: {inputs.get('broker_name', 'Independent Broker')} | {inputs.get('broker_phone', '')}"
+    pdf.cell(0, 6, broker_text, 0, 1, align)
+    pdf.ln(8)
+    
+    # --- STATIC MAP IMAGE ---
+    lat = inputs.get('lat')
+    lon = inputs.get('lon')
+    api_key = inputs.get('api_key')
+    
+    if lat and lon and api_key:
+        # Call the Google Maps Static API
+        map_url = f"https://maps.googleapis.com/maps/api/staticmap?center={lat},{lon}&zoom=17&size=600x250&maptype=hybrid&markers=color:red%7C{lat},{lon}&key={api_key}"
+        map_path = os.path.join(tempfile.gettempdir(), "static_map_temp.jpg")
+        try:
+            urllib.request.urlretrieve(map_url, map_path)
+            pdf.image(map_path, x=10, w=190)
+            pdf.ln(5)
+        except Exception:
+            pdf.set_font('Arial', 'I', 10)
+            pdf.cell(0, 10, '(Satellite Map could not be loaded)', 0, 1)
     
     # --- 1. LOT DETAILS ---
     pdf.set_font('Arial', 'B', 12)
@@ -112,7 +148,6 @@ def generate_tear_sheet(results, inputs):
     except Exception as e:
         pdf.cell(0, 5, "Sources currently unavailable.", 0, 1)
 
-    # Save to a temporary file and read as bytes
     temp_path = os.path.join(tempfile.gettempdir(), "lotecalc_report.pdf")
     pdf.output(temp_path)
     
