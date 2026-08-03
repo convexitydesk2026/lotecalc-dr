@@ -2,7 +2,7 @@
 ===============================================================================
 PROJECT: LoteCalc DR (B2B PropTech SaaS)
 FILE: app.py
-VERSION: 1.4 (Dynamic Cloud Paths)
+VERSION: 1.5 (Secure API Key Injection)
 DATE: August 03, 2026
 AUTHOR: P1 (Lead PropTech Developer)
 ===============================================================================
@@ -18,7 +18,6 @@ from data_validator import validate_lot_inputs
 from real_estate_math import FeasibilityEngine
 from pdf_generator import generate_tear_sheet
 
-# --- CONFIGURATION & CSS (Mobile First) ---
 st.set_page_config(page_title="LoteCalc DR", page_icon="🏢", layout="centered", initial_sidebar_state="collapsed")
 
 st.markdown("""
@@ -35,11 +34,9 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# CRITICAL FIX: Dynamic Path for Cloud Deployment
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, 'zoning_dr.db')
 
-# --- STATE MANAGEMENT ---
 if 'lang' not in st.session_state:
     st.session_state['lang'] = 'EN'
 
@@ -48,7 +45,6 @@ def toggle_lang():
 
 t = TEXT[st.session_state['lang']]
 
-# --- UI HEADER ---
 col1, col2 = st.columns([4, 1])
 with col1:
     st.title(t["app_title"])
@@ -58,14 +54,20 @@ with col2:
 
 st.divider()
 
-# --- STEP 1: GEOLOCATION (CUSTOM GOOGLE MAPS COMPONENT) ---
+# --- STEP 1: GEOLOCATION ---
 st.subheader(t["step_1"])
 
-# Declare the custom component pointing to our new folder
+# Fetch the secure API key from Streamlit Secrets
+try:
+    MAPS_API_KEY = st.secrets["MAPS_API_KEY"]
+except KeyError:
+    st.error("API Key missing from Streamlit Secrets.")
+    MAPS_API_KEY = ""
+
 google_map_component = components.declare_component("google_map", path=os.path.join(BASE_DIR, "map_component"))
 
-# Render the map. When the user clicks "Confirm", gps_data will populate!
-gps_data = google_map_component(key="gmap")
+# Pass the API key securely to the HTML component
+gps_data = google_map_component(api_key=MAPS_API_KEY, key="gmap")
 
 sector_id = None
 if gps_data:

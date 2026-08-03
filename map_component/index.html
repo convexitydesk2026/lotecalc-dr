@@ -2,7 +2,7 @@
 ===============================================================================
 PROJECT: LoteCalc DR (B2B PropTech SaaS)
 FILE: map_component/index.html
-DESCRIPTION: Bi-directional Google Maps component for Streamlit.
+VERSION: 1.2 (Dynamic API Key Injection)
 ===============================================================================
 -->
 <!DOCTYPE html>
@@ -27,12 +27,10 @@ DESCRIPTION: Bi-directional Google Maps component for Streamlit.
     </div>
 
     <script>
-        // --- STREAMLIT BI-DIRECTIONAL COMMUNICATION ---
         function sendMessageToStreamlitClient(type, data) {
             window.parent.postMessage(Object.assign({isStreamlitMessage: true, type: type}, data), "*");
         }
         
-        // CRITICAL FIX: The Handshake! This tells Streamlit the map is alive and removes the yellow box.
         sendMessageToStreamlitClient("streamlit:componentReady", {apiVersion: 1});
 
         function setComponentValue(value) {
@@ -42,7 +40,6 @@ DESCRIPTION: Bi-directional Google Maps component for Streamlit.
             sendMessageToStreamlitClient("streamlit:setFrameHeight", {height: height});
         }
 
-        // --- GOOGLE MAPS LOGIC ---
         let map;
         let marker;
 
@@ -51,32 +48,42 @@ DESCRIPTION: Bi-directional Google Maps component for Streamlit.
             map = new google.maps.Map(document.getElementById("map"), {
                 center: piantini,
                 zoom: 16,
-                mapTypeId: 'hybrid', // Satellite view with street names
+                mapTypeId: 'hybrid',
                 disableDefaultUI: true,
                 zoomControl: true
             });
 
             marker = new google.maps.Marker({ position: piantini, map: map, draggable: true });
-
-            // Move marker when user taps the map
             map.addListener("click", (e) => { marker.setPosition(e.latLng); });
-
-            // Tell Streamlit how tall this iframe should be
             setTimeout(() => { setFrameHeight(430); }, 500);
         }
 
         function confirmLocation() {
             const lat = marker.getPosition().lat();
             const lon = marker.getPosition().lng();
-            setComponentValue({lat: lat, lon: lon}); // Send data to Python!
+            setComponentValue({lat: lat, lon: lon}); 
             
             const btn = document.getElementById("confirm-btn");
             btn.innerText = "✅ Location Locked!";
             btn.style.backgroundColor = "#28a745";
         }
+
+        // CRITICAL: Listen for the secure API key from Python
+        window.addEventListener("message", function(event) {
+            if (event.data.type === "streamlit:render") {
+                const apiKey = event.data.args.api_key;
+                
+                // Inject the Google Maps script only once
+                if (!document.getElementById("gmap-script") && apiKey) {
+                    const script = document.createElement("script");
+                    script.id = "gmap-script";
+                    script.src = "https://maps.googleapis.com/maps/api/js?key=" + apiKey + "&callback=initMap";
+                    script.async = true;
+                    script.defer = true;
+                    document.head.appendChild(script);
+                }
+            }
+        });
     </script>
-    
-    <!-- PASTE YOUR API KEY BELOW -->
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCZYFt-08mxRwuZ7nYYdpt8pQOc1zXQrGw&callback=initMap" async defer></script>
 </body>
 </html>
