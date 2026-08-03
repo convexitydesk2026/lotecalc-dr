@@ -2,7 +2,7 @@
 ===============================================================================
 PROJECT: LoteCalc DR (B2B PropTech SaaS)
 FILE: pdf_generator.py
-VERSION: 1.7 (PNG Format Fix for Static Map)
+VERSION: 1.8 (Default Logo & Branding)
 DATE: August 03, 2026
 AUTHOR: P1 (Lead PropTech Developer)
 ===============================================================================
@@ -16,33 +16,52 @@ from fpdf import FPDF
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ASSUMPTIONS_PATH = os.path.join(BASE_DIR, 'market_assumptions.json')
+DEFAULT_LOGO_PATH = os.path.join(BASE_DIR, 'default_logo.jpg')
 
 def generate_tear_sheet(results, inputs):
     pdf = FPDF()
     pdf.add_page()
     
     # --- BROKER BRANDING HEADER ---
+    logo_to_print = None
+    
     if inputs.get('broker_logo'):
         ext = inputs.get('logo_ext', 'png')
         logo_path = os.path.join(tempfile.gettempdir(), f"broker_logo_temp.{ext}")
         with open(logo_path, "wb") as f:
             f.write(inputs['broker_logo'])
+        logo_to_print = logo_path
+    elif os.path.exists(DEFAULT_LOGO_PATH):
+        # Fallback to LoteCalc default logo
+        logo_to_print = DEFAULT_LOGO_PATH
+        
+    if logo_to_print:
         try:
-            pdf.image(logo_path, x=10, y=8, h=15)
+            pdf.image(logo_to_print, x=10, y=8, h=15)
         except Exception:
             pass 
             
     pdf.set_font('Arial', 'B', 16)
     pdf.set_text_color(0, 122, 255) 
     
-    align = 'R' if inputs.get('broker_logo') else 'C'
+    align = 'R' if logo_to_print else 'C'
     pdf.cell(0, 8, 'LoteCalc DR - Financial Tear-Sheet', 0, 1, align)
     
     pdf.set_font('Arial', '', 10)
     pdf.set_text_color(100, 100, 100) 
-    if inputs.get('broker_name') or inputs.get('broker_phone'):
-        broker_text = f"Prepared by: {inputs.get('broker_name', '')} | {inputs.get('broker_phone', '')}"
-        pdf.cell(0, 6, broker_text, 0, 1, align)
+    
+    # Default Text Logic
+    b_name = inputs.get('broker_name', '').strip()
+    b_phone = inputs.get('broker_phone', '').strip()
+    
+    if b_name or b_phone:
+        name_part = b_name if b_name else "Independent Broker"
+        phone_part = f" | {b_phone}" if b_phone else ""
+        broker_text = f"Prepared by: {name_part}{phone_part}"
+    else:
+        broker_text = "Prepared by LoteCalc | lotecalc.com | 1-809-000-0000"
+        
+    pdf.cell(0, 6, broker_text, 0, 1, align)
     pdf.ln(8)
     
     # --- STATIC MAP IMAGE ---
