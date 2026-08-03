@@ -2,7 +2,7 @@
 ===============================================================================
 PROJECT: LoteCalc DR (B2B PropTech SaaS)
 FILE: pdf_generator.py
-VERSION: 1.3 (Static Map & Broker Branding)
+VERSION: 1.4 (Logo Extension Fix)
 DATE: August 03, 2026
 AUTHOR: P1 (Lead PropTech Developer)
 ===============================================================================
@@ -22,14 +22,15 @@ def generate_tear_sheet(results, inputs):
     
     # --- BROKER BRANDING HEADER ---
     if inputs.get('broker_logo'):
-        # Save logo bytes to a temporary file so FPDF can read it
-        logo_path = os.path.join(tempfile.gettempdir(), "broker_logo_temp.png")
+        # Use the exact extension uploaded by the user
+        ext = inputs.get('logo_ext', 'png')
+        logo_path = os.path.join(tempfile.gettempdir(), f"broker_logo_temp.{ext}")
         with open(logo_path, "wb") as f:
             f.write(inputs['broker_logo'])
         try:
             pdf.image(logo_path, x=10, y=8, h=15)
         except Exception:
-            pass # Failsafe if the user uploads an unsupported image format
+            pass # Failsafe if the image is corrupted
             
     pdf.set_font('Arial', 'B', 16)
     pdf.set_text_color(0, 122, 255) # LoteCalc Blue
@@ -41,8 +42,9 @@ def generate_tear_sheet(results, inputs):
     # Broker Contact Info
     pdf.set_font('Arial', '', 10)
     pdf.set_text_color(100, 100, 100) # Gray
-    broker_text = f"Prepared by: {inputs.get('broker_name', 'Independent Broker')} | {inputs.get('broker_phone', '')}"
-    pdf.cell(0, 6, broker_text, 0, 1, align)
+    if inputs.get('broker_name') or inputs.get('broker_phone'):
+        broker_text = f"Prepared by: {inputs.get('broker_name', '')} | {inputs.get('broker_phone', '')}"
+        pdf.cell(0, 6, broker_text, 0, 1, align)
     pdf.ln(8)
     
     # --- STATIC MAP IMAGE ---
@@ -60,7 +62,7 @@ def generate_tear_sheet(results, inputs):
             pdf.ln(5)
         except Exception:
             pdf.set_font('Arial', 'I', 10)
-            pdf.cell(0, 10, '(Satellite Map could not be loaded)', 0, 1)
+            pdf.cell(0, 10, '(Satellite Map could not be loaded. Ensure Maps Static API is enabled in Google Cloud).', 0, 1)
     
     # --- 1. LOT DETAILS ---
     pdf.set_font('Arial', 'B', 12)

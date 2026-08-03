@@ -2,7 +2,7 @@
 ===============================================================================
 PROJECT: LoteCalc DR (B2B PropTech SaaS)
 FILE: app.py
-VERSION: 1.6 (Broker Branding Sidebar)
+VERSION: 1.7 (Main Flow Broker Branding & Logo Fix)
 DATE: August 03, 2026
 AUTHOR: P1 (Lead PropTech Developer)
 ===============================================================================
@@ -18,7 +18,7 @@ from data_validator import validate_lot_inputs
 from real_estate_math import FeasibilityEngine
 from pdf_generator import generate_tear_sheet
 
-st.set_page_config(page_title="LoteCalc DR", page_icon="🏢", layout="centered", initial_sidebar_state="expanded")
+st.set_page_config(page_title="LoteCalc DR", page_icon="🏢", layout="centered", initial_sidebar_state="collapsed")
 
 st.markdown("""
     <style>
@@ -45,19 +45,35 @@ def toggle_lang():
 
 t = TEXT[st.session_state['lang']]
 
-# --- BROKER BRANDING SIDEBAR ---
-with st.sidebar:
-    st.header("👤 Broker Profile")
-    st.caption("Personalize your PDF reports.")
-    broker_name = st.text_input("Your Name / Agency", placeholder="e.g. John Doe Realty")
-    broker_phone = st.text_input("Contact Number", placeholder="e.g. +1 809-555-0199")
-    broker_logo = st.file_uploader("Upload Logo (PNG/JPG)", type=["png", "jpg", "jpeg"])
-    st.divider()
-    st.button("🌐 EN / ES", on_click=toggle_lang)
-
 # --- UI HEADER ---
-st.title(t["app_title"])
-st.caption(t["subtitle"])
+col1, col2 = st.columns([4, 1])
+with col1:
+    st.title(t["app_title"])
+    st.caption(t["subtitle"])
+with col2:
+    st.button("EN / ES", on_click=toggle_lang)
+
+st.divider()
+
+# --- OPTIONAL: BROKER BRANDING ---
+st.subheader("👤 Report Branding (Optional)")
+brand_report = st.radio("Do you want to add your personal/agency branding to the PDF?", ["No", "Yes"], horizontal=True)
+
+broker_name = ""
+broker_phone = ""
+broker_logo_bytes = None
+logo_ext = ""
+
+if brand_report == "Yes":
+    st.info("This information will appear at the top of your generated PDF.")
+    broker_name = st.text_input("Your Name / Agency", placeholder="e.g. Juan Perez Realty")
+    broker_phone = st.text_input("Contact Number", placeholder="e.g. +1 809-555-0199")
+    uploaded_logo = st.file_uploader("Upload Logo (PNG/JPG)", type=["png", "jpg", "jpeg"])
+    
+    if uploaded_logo:
+        broker_logo_bytes = uploaded_logo.read()
+        logo_ext = uploaded_logo.name.split('.')[-1] # Extract the correct extension
+
 st.divider()
 
 # --- STEP 1: GEOLOCATION ---
@@ -163,7 +179,7 @@ if st.button(t["btn_calculate"]):
                 
                 st.divider()
                 
-                # Package all inputs, including broker branding and map data
+                # Package all inputs, including dynamic logo extension
                 inputs_dict = {
                     "sector": sector_id,
                     "width": w,
@@ -175,7 +191,8 @@ if st.button(t["btn_calculate"]):
                     "api_key": MAPS_API_KEY,
                     "broker_name": broker_name,
                     "broker_phone": broker_phone,
-                    "broker_logo": broker_logo.read() if broker_logo else None
+                    "broker_logo": broker_logo_bytes,
+                    "logo_ext": logo_ext
                 }
                 
                 pdf_bytes = generate_tear_sheet(res, inputs_dict)
