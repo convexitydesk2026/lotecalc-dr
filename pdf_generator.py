@@ -2,7 +2,7 @@
 ===============================================================================
 PROJECT: LoteCalc DR (B2B PropTech SaaS)
 FILE: pdf_generator.py
-VERSION: 1.6 (Indentation Fix)
+VERSION: 1.7 (PNG Format Fix for Static Map)
 DATE: August 03, 2026
 AUTHOR: P1 (Lead PropTech Developer)
 ===============================================================================
@@ -51,11 +51,11 @@ def generate_tear_sheet(results, inputs):
     api_key = inputs.get('api_key')
     
     if lat and lon and api_key:
-        map_url = f"https://maps.googleapis.com/maps/api/staticmap?center={lat},{lon}&zoom=17&size=600x250&maptype=hybrid&markers=color:red%7C{lat},{lon}&key={api_key}"
-        map_path = os.path.join(tempfile.gettempdir(), "static_map_temp.jpg")
+        # CRITICAL FIX: Explicitly request format=png and save as .png
+        map_url = f"https://maps.googleapis.com/maps/api/staticmap?center={lat},{lon}&zoom=17&size=600x250&maptype=hybrid&format=png&markers=color:red%7C{lat},{lon}&key={api_key}"
+        map_path = os.path.join(tempfile.gettempdir(), "static_map_temp.png")
         
         try:
-            # CRITICAL FIX: Disguise Python as a web browser to bypass Google bot-blockers
             req = urllib.request.Request(map_url, headers={'User-Agent': 'Mozilla/5.0'})
             with urllib.request.urlopen(req) as response, open(map_path, 'wb') as out_file:
                 out_file.write(response.read())
@@ -63,7 +63,6 @@ def generate_tear_sheet(results, inputs):
             pdf.image(map_path, x=10, w=190)
             pdf.ln(5)
         except urllib.error.HTTPError as e:
-            # If Google blocks it, print the exact HTTP error code in the PDF
             pdf.set_font('Arial', 'I', 10)
             pdf.set_text_color(200, 0, 0)
             pdf.cell(0, 10, f'(Map Error: Google API returned HTTP {e.code}. Check Static API status.)', 0, 1)
