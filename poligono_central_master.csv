@@ -1,0 +1,4 @@
+﻿Sector_ID,Densidad_Max_hab_ha,Huella_Max_pct,Altura_Max_levels,Lindero_Frontal_m,Lindero_Lateral_m,Lindero_Posterior_m,Area_Verde_Min_pct,Sale_Price_per_m2
+PIAN-01,800,0.5,10,5,3,3,0.2,3200
+PIAN-02,950,0.6,15,5,3,3,0.15,3000
+PIAN-03,1200,0.7,20,5,4,4,0.1,2800

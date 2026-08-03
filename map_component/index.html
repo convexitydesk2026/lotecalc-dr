@@ -1,0 +1,82 @@
+<!-- 
+===============================================================================
+PROJECT: LoteCalc DR (B2B PropTech SaaS)
+FILE: map_component/index.html
+DESCRIPTION: Bi-directional Google Maps component for Streamlit.
+===============================================================================
+-->
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { margin: 0; padding: 0; font-family: -apple-system, sans-serif; }
+        #map { width: 100%; height: 350px; border-radius: 10px; }
+        .btn-container { padding: 10px 0; text-align: center; }
+        .btn {
+            background-color: #007aff; color: white; padding: 15px 20px;
+            border: none; border-radius: 8px; font-size: 16px; font-weight: bold;
+            width: 100%; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <div class="btn-container">
+        <button id="confirm-btn" class="btn" onclick="confirmLocation()">📍 Confirm Lot Location</button>
+    </div>
+
+    <script>
+        // --- STREAMLIT BI-DIRECTIONAL COMMUNICATION ---
+        function sendMessageToStreamlitClient(type, data) {
+            window.parent.postMessage(Object.assign({isStreamlitMessage: true, type: type}, data), "*");
+        }
+        
+        // CRITICAL FIX: The Handshake! This tells Streamlit the map is alive and removes the yellow box.
+        sendMessageToStreamlitClient("streamlit:componentReady", {apiVersion: 1});
+
+        function setComponentValue(value) {
+            sendMessageToStreamlitClient("streamlit:setComponentValue", {value: value});
+        }
+        function setFrameHeight(height) {
+            sendMessageToStreamlitClient("streamlit:setFrameHeight", {height: height});
+        }
+
+        // --- GOOGLE MAPS LOGIC ---
+        let map;
+        let marker;
+
+        function initMap() {
+            const piantini = { lat: 18.472, lng: -69.932 };
+            map = new google.maps.Map(document.getElementById("map"), {
+                center: piantini,
+                zoom: 16,
+                mapTypeId: 'hybrid', // Satellite view with street names
+                disableDefaultUI: true,
+                zoomControl: true
+            });
+
+            marker = new google.maps.Marker({ position: piantini, map: map, draggable: true });
+
+            // Move marker when user taps the map
+            map.addListener("click", (e) => { marker.setPosition(e.latLng); });
+
+            // Tell Streamlit how tall this iframe should be
+            setTimeout(() => { setFrameHeight(430); }, 500);
+        }
+
+        function confirmLocation() {
+            const lat = marker.getPosition().lat();
+            const lon = marker.getPosition().lng();
+            setComponentValue({lat: lat, lon: lon}); // Send data to Python!
+            
+            const btn = document.getElementById("confirm-btn");
+            btn.innerText = "✅ Location Locked!";
+            btn.style.backgroundColor = "#28a745";
+        }
+    </script>
+    
+    <!-- PASTE YOUR API KEY BELOW -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCZYFt-08mxRwuZ7nYYdpt8pQOc1zXQrGw&callback=initMap" async defer></script>
+</body>
+</html>
