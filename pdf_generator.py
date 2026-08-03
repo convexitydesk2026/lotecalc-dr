@@ -2,7 +2,7 @@
 ===============================================================================
 PROJECT: LoteCalc DR (B2B PropTech SaaS)
 FILE: pdf_generator.py
-VERSION: 1.5 (Static Map Bot Disguise & Error Logging)
+VERSION: 1.6 (Indentation Fix)
 DATE: August 03, 2026
 AUTHOR: P1 (Lead PropTech Developer)
 ===============================================================================
@@ -150,3 +150,18 @@ def generate_tear_sheet(results, inputs):
     pdf.multi_cell(0, 5, "The sale price per M2 is the average of publicly available units in this sector. This average is updated weekly. Sources include:")
     
     try:
+        with open(ASSUMPTIONS_PATH, 'r') as f:
+            market_data = json.load(f)
+            
+        for i, link in enumerate(market_data.get("reference_links", [])):
+            pdf.cell(0, 5, f"{i+1}) {link}", 0, 1)
+    except Exception as e:
+        pdf.cell(0, 5, "Sources currently unavailable.", 0, 1)
+
+    temp_path = os.path.join(tempfile.gettempdir(), "lotecalc_report.pdf")
+    pdf.output(temp_path)
+    
+    with open(temp_path, "rb") as f:
+        pdf_bytes = f.read()
+        
+    return pdf_bytes
