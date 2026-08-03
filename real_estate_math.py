@@ -2,7 +2,7 @@
 ===============================================================================
 PROJECT: LoteCalc DR (B2B PropTech SaaS)
 FILE: real_estate_math.py
-VERSION: 1.4 (Math Breakdown & Dynamic Parking)
+VERSION: 1.5 (Dynamic Cloud Paths)
 DATE: August 03, 2026
 AUTHOR: P1 (Lead PropTech Developer)
 ===============================================================================
@@ -12,7 +12,8 @@ import json
 import math
 import numpy_financial as npf
 
-BASE_DIR = r"C:\Users\donca\Desktop\Desktop HP Envy x360 al 22Abr24\Docs Manuel\IBKR_Options\lotecalc"
+# CRITICAL FIX: Dynamic Path for Cloud Deployment
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ASSUMPTIONS_PATH = os.path.join(BASE_DIR, 'market_assumptions.json')
 
 class FeasibilityEngine:

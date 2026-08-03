@@ -2,12 +2,9 @@
 ===============================================================================
 PROJECT: LoteCalc DR (B2B PropTech SaaS)
 FILE: app.py
-VERSION: 1.3 (Interactive Google Maps Component)
+VERSION: 1.4 (Dynamic Cloud Paths)
 DATE: August 03, 2026
 AUTHOR: P1 (Lead PropTech Developer)
-
-LOCAL PATH: 
-C:\\Users\\donca\\Desktop\\Desktop HP Envy x360 al 22Abr24\\Docs Manuel\\IBKR_Options\\lotecalc\\app.py
 ===============================================================================
 """
 
@@ -38,7 +35,8 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-BASE_DIR = r"C:\Users\donca\Desktop\Desktop HP Envy x360 al 22Abr24\Docs Manuel\IBKR_Options\lotecalc"
+# CRITICAL FIX: Dynamic Path for Cloud Deployment
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, 'zoning_dr.db')
 
 # --- STATE MANAGEMENT ---
