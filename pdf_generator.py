@@ -2,7 +2,7 @@
 ===============================================================================
 PROJECT: LoteCalc DR (B2B PropTech SaaS)
 FILE: pdf_generator.py
-VERSION: 1.4 (Logo Extension Fix)
+VERSION: 1.5 (Static Map Bot Disguise & Error Logging)
 DATE: August 03, 2026
 AUTHOR: P1 (Lead PropTech Developer)
 ===============================================================================
@@ -11,6 +11,7 @@ import os
 import json
 import tempfile
 import urllib.request
+import urllib.error
 from fpdf import FPDF
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -22,7 +23,6 @@ def generate_tear_sheet(results, inputs):
     
     # --- BROKER BRANDING HEADER ---
     if inputs.get('broker_logo'):
-        # Use the exact extension uploaded by the user
         ext = inputs.get('logo_ext', 'png')
         logo_path = os.path.join(tempfile.gettempdir(), f"broker_logo_temp.{ext}")
         with open(logo_path, "wb") as f:
@@ -30,18 +30,16 @@ def generate_tear_sheet(results, inputs):
         try:
             pdf.image(logo_path, x=10, y=8, h=15)
         except Exception:
-            pass # Failsafe if the image is corrupted
+            pass 
             
     pdf.set_font('Arial', 'B', 16)
-    pdf.set_text_color(0, 122, 255) # LoteCalc Blue
+    pdf.set_text_color(0, 122, 255) 
     
-    # Align title to the right if a logo exists on the left, otherwise center it
     align = 'R' if inputs.get('broker_logo') else 'C'
     pdf.cell(0, 8, 'LoteCalc DR - Financial Tear-Sheet', 0, 1, align)
     
-    # Broker Contact Info
     pdf.set_font('Arial', '', 10)
-    pdf.set_text_color(100, 100, 100) # Gray
+    pdf.set_text_color(100, 100, 100) 
     if inputs.get('broker_name') or inputs.get('broker_phone'):
         broker_text = f"Prepared by: {inputs.get('broker_name', '')} | {inputs.get('broker_phone', '')}"
         pdf.cell(0, 6, broker_text, 0, 1, align)
@@ -53,16 +51,26 @@ def generate_tear_sheet(results, inputs):
     api_key = inputs.get('api_key')
     
     if lat and lon and api_key:
-        # Call the Google Maps Static API
         map_url = f"https://maps.googleapis.com/maps/api/staticmap?center={lat},{lon}&zoom=17&size=600x250&maptype=hybrid&markers=color:red%7C{lat},{lon}&key={api_key}"
         map_path = os.path.join(tempfile.gettempdir(), "static_map_temp.jpg")
+        
         try:
-            urllib.request.urlretrieve(map_url, map_path)
+            # CRITICAL FIX: Disguise Python as a web browser to bypass Google bot-blockers
+            req = urllib.request.Request(map_url, headers={'User-Agent': 'Mozilla/5.0'})
+            with urllib.request.urlopen(req) as response, open(map_path, 'wb') as out_file:
+                out_file.write(response.read())
+                
             pdf.image(map_path, x=10, w=190)
             pdf.ln(5)
-        except Exception:
+        except urllib.error.HTTPError as e:
+            # If Google blocks it, print the exact HTTP error code in the PDF
             pdf.set_font('Arial', 'I', 10)
-            pdf.cell(0, 10, '(Satellite Map could not be loaded. Ensure Maps Static API is enabled in Google Cloud).', 0, 1)
+            pdf.set_text_color(200, 0, 0)
+            pdf.cell(0, 10, f'(Map Error: Google API returned HTTP {e.code}. Check Static API status.)', 0, 1)
+        except Exception as e:
+            pdf.set_font('Arial', 'I', 10)
+            pdf.set_text_color(200, 0, 0)
+            pdf.cell(0, 10, f'(Map Error: {str(e)})', 0, 1)
     
     # --- 1. LOT DETAILS ---
     pdf.set_font('Arial', 'B', 12)
@@ -111,7 +119,7 @@ def generate_tear_sheet(results, inputs):
     if results.get('Warnings'):
         pdf.ln(5)
         pdf.set_font('Arial', 'B', 12)
-        pdf.set_text_color(200, 0, 0) # Red
+        pdf.set_text_color(200, 0, 0) 
         pdf.cell(0, 10, 'Architectural Warnings:', 0, 1)
         
         pdf.set_font('Arial', '', 11)
