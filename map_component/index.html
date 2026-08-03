@@ -2,7 +2,7 @@
 ===============================================================================
 PROJECT: LoteCalc DR (B2B PropTech SaaS)
 FILE: map_component/index.html
-VERSION: 1.2 (Dynamic API Key Injection)
+VERSION: 1.3 (Iframe Height Squash Fix)
 ===============================================================================
 -->
 <!DOCTYPE html>
@@ -55,6 +55,8 @@ VERSION: 1.2 (Dynamic API Key Injection)
 
             marker = new google.maps.Marker({ position: piantini, map: map, draggable: true });
             map.addListener("click", (e) => { marker.setPosition(e.latLng); });
+            
+            // Initial height set
             setTimeout(() => { setFrameHeight(430); }, 500);
         }
 
@@ -68,9 +70,13 @@ VERSION: 1.2 (Dynamic API Key Injection)
             btn.style.backgroundColor = "#28a745";
         }
 
-        // CRITICAL: Listen for the secure API key from Python
+        // Listen for the secure API key from Python
         window.addEventListener("message", function(event) {
             if (event.data.type === "streamlit:render") {
+                
+                // CRITICAL FIX: Force the iframe to stay open on every Streamlit refresh!
+                setFrameHeight(430); 
+                
                 const apiKey = event.data.args.api_key;
                 
                 // Inject the Google Maps script only once
